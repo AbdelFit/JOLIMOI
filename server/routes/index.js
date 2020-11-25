@@ -1,6 +1,9 @@
 const express = require('express');
 const router = express.Router();
 
+let romanNumber = "";
+let oldRomanNumber = "";
+
 // post
 router.post('/getRoman', (req, res) => {
     if(req.body.decimalNumber) {
@@ -9,7 +12,7 @@ router.post('/getRoman', (req, res) => {
         const roman_symbols = ["","C","CC","CCC","CD","D","DC","DCC","DCCC","CM",
                             "","X","XX","XXX","XL","L","LX","LXX","LXXX","XC",
                             "","I","II","III","IV","V","VI","VII","VIII","IX"];    // roman symbols
-        let romanNumber = "";
+        romanNumber = "";
         let i = 3;      // we only want 3 digits to convert (numbers between 1 and 100)
 
         /*
@@ -46,8 +49,32 @@ router.post('/getRoman', (req, res) => {
         res.status(200).send(JSON.stringify({'romanNumber': romanNumber}));
     }
     else {
-        res.status(204).send('No Content');
+        res.status(204).end();
     }
+});
+
+
+// sse
+router.get('/sse', (req, res) => {
+    // SSE Setup
+    res.writeHead(200, {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+    });
+    res.write('\n');
+
+    let data;
+    
+    // SSE Data
+    setInterval(() => {
+        /*
+            if the decimal number has changed in the front we'll send it's roman number, if not we'll send 0
+            this will help us prevent the error "err_incomplete_chunked_encoding"
+        */
+        data = oldRomanNumber !== romanNumber ? romanNumber : 0;
+        res.write(`data: ${JSON.stringify(data)}\n\n`);
+    }, 1000)
 });
 
 module.exports = router;

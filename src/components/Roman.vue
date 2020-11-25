@@ -28,7 +28,7 @@
 			<hr class="my-4">
 
 			<h3 class="mt-5">
-				Le chiffre en romain est : <span class="text-danger">{{ romanNumber }}</span>
+				Le chiffre en romain est : <span class="text-danger" v-if=!error>{{ romanNumber }}</span>
 			</h3>
 		</b-jumbotron>
 	</div>
@@ -46,10 +46,15 @@
 			}
 		},
 
+		mounted() {
+			this.setSSE();
+		},
+
 		methods: {
 			getRomain() {
 				if(this.decimalNumber >= 1 && this.decimalNumber <= 100) {
 					this.error = false;
+					this.romanNumber = null;
 
 					const options = {
 						method: 'POST',
@@ -60,10 +65,7 @@
 						}
 					};
 
-					this.getResponse('http://localhost:3000/getRoman', options)
-						.then(res => {
-							this.romanNumber = res.romanNumber;
-						});
+					this.getResponse('http://localhost:3000/getRoman', options);
 				}
 				else {
 					this.romanNumber = null;
@@ -75,6 +77,15 @@
 				let res = await fetch(url, options);
 				let json = await res.json();
 				return json;
+			},
+
+			setSSE() {
+				const eventSource = new EventSource("http://localhost:3000/sse");
+
+				eventSource.addEventListener("message", (e) => {
+					let res = JSON.parse(e.data);
+					this.romanNumber = res != 0 ? res : null;
+				});
 			}
 		}
 	}
